@@ -1,6 +1,10 @@
 const UnauthenticatedError = require("../errors/unauthenticated");
 const NotFoundError = require("../errors/not-found");
-const { isTokenValid } = require("../utils/jwt");
+// const { isTokenValid } = require("../utils/jwt");
+const { attachCookiesToResponse } = require("../utils/jwt");
+const createTokenUser = require("../utils/createTokenUser");
+const BadRequestError = require("../errors/bad-request");
+const { checkPermissions } = require("../utils/checkPermissions");
 const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
 // admin features only
@@ -33,9 +37,8 @@ const getSingleUser = async (req, res) => {
     throw new UnauthenticatedError("Authentication invalid");
   }
 
-  if (req.user.userId !== id) {
-    throw new UnauthenticatedError("Unauthorized to access this route");
-  }
+  // check permissions
+  checkPermissions(req.user, id);
   // proceed to get single user
   const user = await User.findOne({ _id: id }).select("-password");
   if (!user) {
@@ -46,15 +49,62 @@ const getSingleUser = async (req, res) => {
 };
 
 const showCurrentUser = (req, res) => {
-  res.send("show current user");
+  if (!req.user) {
+    throw new UnauthenticatedError("Authentication invalid");
+  }
+  res.status(StatusCodes.OK).json({ user: req.user });
 };
 
-const updateUser = (req, res) => {
-  res.send("update user");
+const updateUser = async (req, res) => {
+  //1) check name and email are provided
+  const { name, email } = req.body;
+  if (!name || !email) {
+    throw new BadRequestError("Please provide name and email");
+  }
+  //2) find user with the id from req.user
+  const updatedUser = await User.findOneAndUpdate(
+    { _id: req.user.userId },
+    { name, email },
+    { new: true, runValidators: true }
+  ).select("-password");
+  if (!updatedUser) {
+    throw new NotFoundError(`No user with id :${req.user.userId}`);
+  }
+
+  //4 make new token in cookies
+  const tokenUser = createTokenUser(updatedUser);
+  attachCookiesToResponse({ res, payload: tokenUser });
+  //5) respond with updated user
+  res.status(StatusCodes.OK).json({ user: updatedUser });
 };
 
-const updateUserPassword = (req, res) => {
-  res.send("update user password");
+const updateUserPassword = async (req, res) => {
+  // extract userId from req.user
+  const { userId, name, role } = req.user;
+
+  // extract oldPassword and newPassword from request body
+  const { oldPassword, newPassword } = req.body;
+
+  // validate input
+  if (!oldPassword || !newPassword) {
+    throw new BadRequestError("Please provide old and new password");
+  }
+
+  // find user in database
+  const currentUser = await User.findOne({ _id: userId });
+  if (!currentUser) {
+    throw new NotFoundError(`No user with id :${userId}`);
+  }
+  // compare old password
+  const isPasswordCorrect = await currentUser.comparePassword(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new UnauthenticatedError("Invalid Credentials");
+  }
+
+  // update to new password
+  currentUser.password = newPassword;
+  await currentUser.save();
+  res.status(StatusCodes.OK).json({ msg: "Success! Password Updated." });
 };
 
 module.exports = {

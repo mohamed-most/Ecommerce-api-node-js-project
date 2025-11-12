@@ -3,13 +3,13 @@ require("express-async-errors");
 const fs = require("fs");
 const path = require("path");
 const cookieParser = require("cookie-parser");
+const fileUpload = require("express-fileupload");
 const express = require("express");
 
 // logging library
 const morgan = require("morgan");
-
 const mongoose = require("mongoose");
-
+// error handler imports
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
@@ -23,15 +23,25 @@ const accessLogStream = fs.createWriteStream(
 // database connection
 const connectDB = require("./db/connect");
 
+// routes imports
 const authRoute = require("./routes/authRoute");
 const userRoute = require("./routes/userRoute");
+const productRoute = require("./routes/productRoute");
+
 // express app
 const app = express();
 
 // middleware
 app.use(morgan("combined", { stream: accessLogStream }));
+app.use(express.static("./public"));
 app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+  })
+);
 // routes
 app.get("/", (req, res) => {
   res.send("ecommerce api");
@@ -39,6 +49,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
+app.use("/api/v1/products", productRoute);
 //errors handling middleware
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);

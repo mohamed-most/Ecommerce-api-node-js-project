@@ -4,7 +4,7 @@ const BadRequestError = require("../errors/bad-request");
 const { StatusCodes } = require("http-status-codes");
 const UnauthenticatedError = require("../errors/unauthenticated");
 const { attachCookiesToResponse } = require("../utils/jwt");
-
+const createTokenUser = require("../utils/createTokenUser");
 // login controller
 async function login(req, res) {
   const { email, password } = req.body;
@@ -19,11 +19,7 @@ async function login(req, res) {
   if (!isPasswordCorrect) {
     throw new BadRequestError("Invalid Credentials");
   }
-  const tokenUser = {
-    userId: user._id,
-    name: user.name,
-    role: user.role,
-  };
+  const tokenUser = createTokenUser(user);
   attachCookiesToResponse({ res, payload: tokenUser });
   res.status(StatusCodes.OK).json({ user: tokenUser });
 }

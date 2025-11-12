@@ -14,7 +14,7 @@ const authenticateUser = async (req, res, next) => {
   if (!token) {
     throw new UnauthenticatedError("Authentication invalid");
   }
-  console.log(token + " i am at auth middleware");
+
   try {
     // verify token
     const payload = isTokenValid(token);
@@ -24,7 +24,7 @@ const authenticateUser = async (req, res, next) => {
       name: payload.name,
       role: payload.role,
     };
-    console.log(req.user + " i am at auth middleware after attaching");
+
     next();
   } catch (error) {
     throw new UnauthenticatedError("Authentication invalid");

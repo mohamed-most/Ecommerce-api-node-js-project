@@ -26,6 +26,7 @@ getSingleProduct = async (req, res) => {
   const { id: productId } = req.params;
   //2) find product by id
   const product = await Product.findById({ _id: productId });
+
   if (!product) {
     throw new NotFoundError(`No product with id :${productId}`);
   }
@@ -49,14 +50,16 @@ updateProduct = async (req, res) => {
 };
 
 deleteProduct = async (req, res) => {
-  //admin only - handled in route middleware
-  //1) extract product id from req.params
   const { id: productId } = req.params;
-  //2) find and delete product
-  const product = await Product.findByIdAndDelete({ _id: productId });
+
+  const product = await Product.findById(productId);
   if (!product) {
-    throw new NotFoundError(`No product with id :${productId}`);
+    throw new NotFoundError(`No product with id : ${productId}`);
   }
+
+  // This triggers productSchema.pre("remove") !!
+  await product.remove();
+
   res.status(StatusCodes.OK).json({ msg: "Product deleted successfully" });
 };
 

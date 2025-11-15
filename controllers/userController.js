@@ -34,7 +34,7 @@ const getSingleUser = async (req, res) => {
 
   // check if token exists
   if (!token) {
-    throw new UnauthenticatedError("Authentication invalid");
+    throw new BadRequestError("Authentication invalid");
   }
 
   // check permissions
@@ -49,9 +49,6 @@ const getSingleUser = async (req, res) => {
 };
 
 const showCurrentUser = (req, res) => {
-  if (!req.user) {
-    throw new UnauthenticatedError("Authentication invalid");
-  }
   res.status(StatusCodes.OK).json({ user: req.user });
 };
 
@@ -98,7 +95,7 @@ const updateUserPassword = async (req, res) => {
   // compare old password
   const isPasswordCorrect = await currentUser.comparePassword(oldPassword);
   if (!isPasswordCorrect) {
-    throw new UnauthenticatedError("Invalid Credentials");
+    throw new BadRequestError("Invalid Credentials");
   }
 
   // update to new password

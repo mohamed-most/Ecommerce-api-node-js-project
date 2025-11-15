@@ -25,7 +25,7 @@ const productSchema = new Mongoose.Schema(
       type: String,
       required: [true, "Please provide product category"],
       enum: {
-        values: ["ikea", "liddy", "marcos", "caressa", "office"],
+        values: ["ikea", "liddy", "marcos", "caressa", "office", "bedroom"],
         message: "{VALUE} is not supported",
       },
     },
@@ -59,6 +59,10 @@ const productSchema = new Mongoose.Schema(
       type: Number,
       default: 0,
     },
+    numOfReviews: {
+      type: Number,
+      default: 0,
+    },
     user: {
       type: Mongoose.Types.ObjectId,
       ref: "User",
@@ -66,6 +70,19 @@ const productSchema = new Mongoose.Schema(
     },
   },
   { timestamps: true }
+  // , toJSON: { virtuals: true }, toObject: { virtuals: true }
 );
+// productSchema.virtual("reviews", {
+//   ref: "Review",
+//   localField: "_id",
+//   foreignField: "product",
+//   justOne: false,
+// });
+
+//also remove all reviews depend on this product
+productSchema.pre("remove", async function (next) {
+  await this.model("Review").deleteMany({ product: this._id });
+  next();
+});
 
 module.exports = Mongoose.model("Product", productSchema);

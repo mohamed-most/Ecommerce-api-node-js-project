@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const fileUpload = require("express-fileupload");
+
 const express = require("express");
 
 // logging library
@@ -27,7 +28,8 @@ const connectDB = require("./db/connect");
 const authRoute = require("./routes/authRoute");
 const userRoute = require("./routes/userRoute");
 const productRoute = require("./routes/productRoute");
-
+const reviewRoute = require("./routes/reviewRoute");
+const orderRoute = require("./routes/orderRoute");
 // express app
 const app = express();
 
@@ -42,14 +44,17 @@ app.use(
     tempFileDir: "/tmp/",
   })
 );
-// routes
+// home
 app.get("/", (req, res) => {
   res.send("ecommerce api");
 });
 
+// routes
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/products", productRoute);
+app.use("/api/v1/reviews", reviewRoute);
+app.use("/api/v1/orders", orderRoute);
 //errors handling middleware
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
